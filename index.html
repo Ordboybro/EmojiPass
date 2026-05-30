@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EmojiPass • Password Generator</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="bg-blur blur1"></div>
+<div class="bg-blur blur2"></div>
+
+<div class="container">
+
+    <header class="hero">
+
+        <div class="logo">
+            🔐
+        </div>
+
+        <h1>EmojiPass</h1>
+
+        <p>
+            Apple-inspired password generator with emoji magic.
+        </p>
+
+    </header>
+
+    <main class="glass card">
+
+        <div class="password-section">
+
+            <input
+                type="text"
+                id="passwordOutput"
+                readonly
+                placeholder="Generate your password..."
+            >
+
+            <button id="copyBtn">
+                📋 Copy
+            </button>
+
+        </div>
+
+        <div class="strength-container">
+
+            <div id="strengthText">
+                Strength: —
+            </div>
+
+            <div class="strength-bar">
+                <div id="strengthFill"></div>
+            </div>
+
+        </div>
+
+        <section class="controls">
+
+            <div class="control-group">
+
+                <label>
+                    Length
+                    <span id="lengthValue">16</span>
+                </label>
+
+                <input
+                    type="range"
+                    min="6"
+                    max="64"
+                    value="16"
+                    id="lengthSlider"
+                >
+
+            </div>
+
+            <div class="options">
+
+                <label class="checkbox">
+                    <input type="checkbox" id="uppercase" checked>
+                    Uppercase Letters
+                </label>
+
+                <label class="checkbox">
+                    <input type="checkbox" id="lowercase" checked>
+                    Lowercase Letters
+                </label>
+
+                <label class="checkbox">
+                    <input type="checkbox" id="numbers" checked>
+                    Numbers
+                </label>
+
+                <label class="checkbox">
+                    <input type="checkbox" id="symbols" checked>
+                    Symbols
+                </label>
+
+                <label class="checkbox">
+                    <input type="checkbox" id="emojiMode">
+                    Emoji Mode 😎
+                </label>
+
+            </div>
+
+            <button id="generateBtn">
+                ✨ Generate Password
+            </button>
+
+        </section>
+
+    </main>
+
+    <section class="glass history-card">
+
+        <div class="section-title">
+            🕒 Recent Passwords
+        </div>
+
+        <ul id="historyList">
+        </ul>
+
+    </section>
+
+    <section class="glass multi-card">
+
+        <div class="section-title">
+            🎲 Quick Generate
+        </div>
+
+        <div id="multiPasswords">
+        </div>
+
+    </section>
+
+    <footer>
+
+        <div>
+            Made with ❤️ by ORDBOY
+        </div>
+
+    </footer>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
