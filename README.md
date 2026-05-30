@@ -2,8 +2,6 @@
 
 Apple-inspired password generator with a modern glassmorphism interface and emoji support.
 
-![Preview](assets/preview.png)
-
 ## ✨ Features
 
 * 🔐 Secure password generation
