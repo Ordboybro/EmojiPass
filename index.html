@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="EmojiPass is a secure browser-based password generator with customizable character sets and emoji mode.">
+    <meta name="theme-color" content="#09090c">
 
     <title>EmojiPass • Password Generator</title>
 
@@ -34,8 +35,8 @@
                     readonly
                     autocomplete="off"
                     spellcheck="false"
-                    placeholder="Generate your password..."
                     aria-describedby="strengthText"
+                    aria-label="Generated password"
                 >
 
                 <button id="copyBtn" type="button" aria-label="Copy generated password">
@@ -104,13 +105,12 @@
 
         <section class="glass history-card" aria-labelledby="historyTitle">
             <div class="section-heading">
-                <h2 id="historyTitle" class="section-title">🕒 Current Session</h2>
-                <button id="clearHistoryBtn" class="secondary-btn" type="button">Clear</button>
+                <div>
+                    <h2 id="historyTitle" class="section-title">🕒 Current Session</h2>
+                    <p class="section-note">Generated passwords are kept only while this page is open.</p>
+                </div>
+                <button id="clearHistoryBtn" class="secondary-btn" type="button">Clear history</button>
             </div>
-
-            <p class="section-note">
-                Generated passwords are kept only while this page is open.
-            </p>
 
             <ul id="historyList"></ul>
             <p id="emptyHistory" class="empty-state">No generated passwords yet.</p>
