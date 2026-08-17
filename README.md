@@ -1,43 +1,51 @@
 # 🔐 EmojiPass
 
-Apple-inspired password generator with a modern glassmorphism interface and emoji support.
+> A browser-based password generator focused on secure randomness, customizable generation, and a clean modern interface.
+
+EmojiPass generates passwords locally in the browser. It uses the Web Crypto API for random values and does not send generated passwords to a server.
 
 ## ✨ Features
 
-* 🔐 Secure password generation
-* 😎 Emoji Password Mode
-* 📏 Adjustable password length
-* 🔢 Numbers support
-* 🔣 Symbols support
-* 📋 One-click copy
-* 💪 Password strength indicator
-* 🕒 Password history
-* 🎲 Multiple password generation
-* 🌙 Dark Apple/VisionOS UI
-* 📱 Responsive design
+- 🔐 Cryptographically stronger random generation with `crypto.getRandomValues()`
+- 📏 Password length from 6 to 64 characters
+- 🔠 Uppercase and lowercase letters
+- 🔢 Numbers
+- 🔣 Symbols
+- 😎 Optional emoji mode
+- 🛡️ Guarantees at least one character from every selected character set
+- 💪 Password strength indicator
+- 📋 One-click clipboard copying
+- 🎲 Five quick-generated passwords
+- 🕒 Session-only password history
+- 💾 Generator settings saved locally in the browser
+- 📱 Responsive interface
+- ♿ Keyboard and reduced-motion accessibility improvements
 
-## 🚀 Demo
+## 🛡️ Privacy & Security
 
-Generate stylish and secure passwords with modern design and emoji support.
+EmojiPass is a client-side application.
 
-Examples:
+- Password generation happens in your browser.
+- Generated passwords are **not sent to a backend or external API**.
+- Password history exists only for the current browser session.
+- Generator preferences may be stored in `localStorage`.
+- The project uses the browser Web Crypto API instead of `Math.random()` for password generation.
 
-```text
-😎Secure2026!
-🚀Pass#2026🔥
-Emoji💎Master77
-```
+> **Important:** EmojiPass is an educational/open-source project, not a replacement for a professionally audited password manager. Avoid storing highly sensitive passwords in browser history or other insecure locations.
 
-## 🛠 Technologies
+## 🛠️ Tech Stack
 
-* HTML5
-* CSS3
-* JavaScript
+- HTML5
+- CSS3
+- JavaScript (Vanilla JS)
+- Web Crypto API
+- LocalStorage API
+- Clipboard API
 
 ## 📂 Project Structure
 
 ```text
-emoji-pass/
+EmojiPass/
 ├── index.html
 ├── style.css
 ├── script.js
@@ -45,22 +53,48 @@ emoji-pass/
 └── .gitignore
 ```
 
-## 🔧 Installation
+## 🚀 Run locally
+
+Clone the repository:
 
 ```bash
-git clone https://github.com/ORDBOY/emoji-pass.git
+git clone https://github.com/Ordboybro/EmojiPass.git
+cd EmojiPass
 ```
 
-Open:
+Then open `index.html` in a modern browser.
+
+For the best browser security/API compatibility, you can also serve the project locally with a simple HTTP server:
 
 ```bash
-index.html
+python -m http.server 8000
 ```
+
+Open `http://localhost:8000` in your browser.
+
+## 🧪 Browser support
+
+EmojiPass requires a modern browser with support for:
+
+- Web Crypto API
+- Clipboard API
+- LocalStorage
+- modern JavaScript
+
+## 📸 Demo
+
+The project can be used directly through its GitHub Pages deployment when enabled.
+
+## 📈 Project Status
+
+**Active development** — the project is being improved as part of my backend and software-development learning journey.
 
 ## 👨‍💻 Author
 
-ORDBOY
+**ORDBOY**
 
-## ⭐ GitHub
+- GitHub: https://github.com/Ordboybro
 
-If you like this project, leave a star.
+## ⭐ Support
+
+If you find EmojiPass useful or interesting, consider giving the repository a ⭐.
