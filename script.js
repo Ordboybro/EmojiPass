@@ -1,6 +1,7 @@
 const passwordOutput = document.getElementById("passwordOutput");
 const generateBtn = document.getElementById("generateBtn");
 const copyBtn = document.getElementById("copyBtn");
+const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 
 const lengthSlider = document.getElementById("lengthSlider");
 const lengthValue = document.getElementById("lengthValue");
@@ -12,26 +13,23 @@ const symbols = document.getElementById("symbols");
 const emojiMode = document.getElementById("emojiMode");
 
 const historyList = document.getElementById("historyList");
+const emptyHistory = document.getElementById("emptyHistory");
 const multiPasswords = document.getElementById("multiPasswords");
 
 const strengthText = document.getElementById("strengthText");
 const strengthFill = document.getElementById("strengthFill");
+const strengthBar = document.querySelector(".strength-bar");
 
 const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const NUMBERS = "0123456789";
 const SYMBOLS = "!@#$%^&*()_+-=[]{}<>?/|";
-const EMOJIS = [
-    "😎", "🔥", "🚀", "💎", "✨",
-    "🎯", "⚡", "🎮", "🌟", "💻",
-    "🧠", "🎉", "🔐", "❤️", "🍀"
-];
+const EMOJIS = ["😎", "🔥", "🚀", "💎", "✨", "🎯", "⚡", "🎮", "🌟", "💻", "🧠", "🎉", "🔐", "❤️", "🍀"];
 
-const HISTORY_KEY = "emojiPass.history";
 const SETTINGS_KEY = "emojiPass.settings";
 const MAX_HISTORY = 10;
 
-let history = loadHistory();
+let history = [];
 
 lengthSlider.addEventListener("input", () => {
     lengthValue.textContent = lengthSlider.value;
@@ -48,6 +46,7 @@ generateBtn.addEventListener("click", () => {
 });
 
 copyBtn.addEventListener("click", copyPassword);
+clearHistoryBtn.addEventListener("click", clearHistory);
 
 function getRandomIndex(max) {
     if (max <= 0) {
@@ -107,16 +106,11 @@ function createPassword() {
         throw new Error("Password length is too short for the selected options.");
     }
 
-    const passwordCharacters = [];
-
-    // Guarantee at least one character from every selected character set.
-    for (const set of sets) {
-        passwordCharacters.push(
-            Array.isArray(set)
-                ? set[getRandomIndex(set.length)]
-                : getRandomCharacter(set)
-        );
-    }
+    const passwordCharacters = sets.map((set) =>
+        Array.isArray(set)
+            ? set[getRandomIndex(set.length)]
+            : getRandomCharacter(set)
+    );
 
     const allCharacters = sets.flatMap((set) =>
         Array.isArray(set) ? set : [...set]
@@ -135,7 +129,7 @@ function generateMainPassword() {
 
         passwordOutput.value = password;
         updateStrength(password);
-        saveHistory(password);
+        addToHistory(password);
     } catch (error) {
         passwordOutput.value = "";
         updateStrength("");
@@ -161,7 +155,6 @@ function calculateStrength(password) {
 
 function updateStrength(password) {
     const score = calculateStrength(password);
-
     const levels = [
         { text: "—", width: 0 },
         { text: "Weak", width: 25 },
@@ -174,35 +167,30 @@ function updateStrength(password) {
     ];
 
     const level = levels[Math.min(score, levels.length - 1)];
-
     strengthText.textContent = `Strength: ${level.text}`;
     strengthFill.style.width = `${level.width}%`;
+    strengthBar?.setAttribute("aria-valuenow", String(level.width));
 }
 
-function saveHistory(password) {
-    history = [password, ...history.filter((item) => item !== password)]
-        .slice(0, MAX_HISTORY);
-
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+function addToHistory(password) {
+    history = [password, ...history.filter((item) => item !== password)].slice(0, MAX_HISTORY);
     renderHistory();
 }
 
-function loadHistory() {
-    try {
-        const stored = JSON.parse(localStorage.getItem(HISTORY_KEY));
-        return Array.isArray(stored) ? stored.slice(0, MAX_HISTORY) : [];
-    } catch {
-        return [];
-    }
+function clearHistory() {
+    history = [];
+    renderHistory();
+    showToast("History cleared.");
 }
 
 function renderHistory() {
     historyList.replaceChildren();
+    emptyHistory.hidden = history.length > 0;
 
     history.forEach((password) => {
-        const li = document.createElement("li");
-        li.textContent = password;
-        historyList.appendChild(li);
+        const item = document.createElement("li");
+        item.textContent = password;
+        historyList.appendChild(item);
     });
 }
 
@@ -231,24 +219,16 @@ function loadSettings() {
             lengthValue.textContent = safeLength;
         }
 
-        if (typeof settings.uppercase === "boolean") {
-            uppercase.checked = settings.uppercase;
-        }
-
-        if (typeof settings.lowercase === "boolean") {
-            lowercase.checked = settings.lowercase;
-        }
-
-        if (typeof settings.numbers === "boolean") {
-            numbers.checked = settings.numbers;
-        }
-
-        if (typeof settings.symbols === "boolean") {
-            symbols.checked = settings.symbols;
-        }
-
-        if (typeof settings.emojiMode === "boolean") {
-            emojiMode.checked = settings.emojiMode;
+        for (const [key, element] of [
+            ["uppercase", uppercase],
+            ["lowercase", lowercase],
+            ["numbers", numbers],
+            ["symbols", symbols],
+            ["emojiMode", emojiMode]
+        ]) {
+            if (typeof settings[key] === "boolean") {
+                element.checked = settings[key];
+            }
         }
     } catch {
         localStorage.removeItem(SETTINGS_KEY);
@@ -266,10 +246,7 @@ function generateQuickPasswords() {
             item.type = "button";
             item.className = "generated-password";
             item.textContent = password;
-
-            item.addEventListener("click", async () => {
-                await copyToClipboard(password);
-            });
+            item.addEventListener("click", () => copyToClipboard(password));
 
             multiPasswords.appendChild(item);
         } catch (error) {
@@ -307,9 +284,7 @@ function showToast(message) {
     toast.textContent = message;
     document.body.appendChild(toast);
 
-    requestAnimationFrame(() => {
-        toast.classList.add("show");
-    });
+    requestAnimationFrame(() => toast.classList.add("show"));
 
     setTimeout(() => {
         toast.classList.remove("show");
