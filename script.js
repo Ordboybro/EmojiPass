@@ -24,10 +24,16 @@ const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const NUMBERS = "0123456789";
 const SYMBOLS = "!@#$%^&*()_+-=[]{}<>?/|";
-const EMOJIS = ["😎", "🔥", "🚀", "💎", "✨", "🎯", "⚡", "🎮", "🌟", "💻", "🧠", "🎉", "🔐", "❤️", "🍀"];
+const EMOJIS = [
+    "😎", "🔥", "🚀", "💎", "✨",
+    "🎯", "⚡", "🎮", "🌟", "💻",
+    "🧠", "🎉", "🔐", "❤️", "🍀"
+];
 
 const SETTINGS_KEY = "emojiPass.settings";
 const MAX_HISTORY = 10;
+const MIN_LENGTH = 6;
+const MAX_LENGTH = 64;
 
 let history = [];
 
@@ -49,8 +55,12 @@ copyBtn.addEventListener("click", copyPassword);
 clearHistoryBtn.addEventListener("click", clearHistory);
 
 function getRandomIndex(max) {
-    if (max <= 0) {
-        throw new Error("Random range must be greater than zero.");
+    if (!Number.isSafeInteger(max) || max <= 0) {
+        throw new Error("Invalid random range.");
+    }
+
+    if (!window.crypto?.getRandomValues) {
+        throw new Error("Secure random generation is not supported by this browser.");
     }
 
     const maxUint32 = 0x100000000;
@@ -58,7 +68,7 @@ function getRandomIndex(max) {
     const random = new Uint32Array(1);
 
     do {
-        crypto.getRandomValues(random);
+        window.crypto.getRandomValues(random);
     } while (random[0] >= limit);
 
     return random[0] % max;
@@ -98,8 +108,8 @@ function createPassword() {
 
     const length = Number(lengthSlider.value);
 
-    if (!Number.isInteger(length) || length < 6 || length > 64) {
-        throw new Error("Password length must be between 6 and 64.");
+    if (!Number.isInteger(length) || length < MIN_LENGTH || length > MAX_LENGTH) {
+        throw new Error(`Password length must be between ${MIN_LENGTH} and ${MAX_LENGTH}.`);
     }
 
     if (length < sets.length) {
@@ -204,7 +214,11 @@ function saveSettings() {
         emojiMode: emojiMode.checked
     };
 
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch {
+        showToast("Settings could not be saved.");
+    }
 }
 
 function loadSettings() {
@@ -214,7 +228,7 @@ function loadSettings() {
         if (!settings || typeof settings !== "object") return;
 
         if (Number.isInteger(settings.length)) {
-            const safeLength = Math.min(64, Math.max(6, settings.length));
+            const safeLength = Math.min(MAX_LENGTH, Math.max(MIN_LENGTH, settings.length));
             lengthSlider.value = safeLength;
             lengthValue.textContent = safeLength;
         }
@@ -231,7 +245,11 @@ function loadSettings() {
             }
         }
     } catch {
-        localStorage.removeItem(SETTINGS_KEY);
+        try {
+            localStorage.removeItem(SETTINGS_KEY);
+        } catch {
+            // Ignore unavailable browser storage.
+        }
     }
 }
 
@@ -246,6 +264,7 @@ function generateQuickPasswords() {
             item.type = "button";
             item.className = "generated-password";
             item.textContent = password;
+            item.setAttribute("aria-label", `Copy generated password ${i + 1}`);
             item.addEventListener("click", () => copyToClipboard(password));
 
             multiPasswords.appendChild(item);
@@ -268,6 +287,11 @@ async function copyPassword() {
 }
 
 async function copyToClipboard(value) {
+    if (!navigator.clipboard?.writeText) {
+        showToast("Clipboard access is unavailable.");
+        return;
+    }
+
     try {
         await navigator.clipboard.writeText(value);
         showToast("Password copied 📋");
@@ -281,6 +305,8 @@ function showToast(message) {
 
     const toast = document.createElement("div");
     toast.className = "toast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
     toast.textContent = message;
     document.body.appendChild(toast);
 
