@@ -21,17 +21,25 @@ const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const NUMBERS = "0123456789";
 const SYMBOLS = "!@#$%^&*()_+-=[]{}<>?/|";
-
 const EMOJIS = [
-    "😎","🔥","🚀","💎","✨",
-    "🎯","⚡","🎮","🌟","💻",
-    "🧠","🎉","🔐","❤️","🍀"
+    "😎", "🔥", "🚀", "💎", "✨",
+    "🎯", "⚡", "🎮", "🌟", "💻",
+    "🧠", "🎉", "🔐", "❤️", "🍀"
 ];
 
-let history = [];
+const HISTORY_KEY = "emojiPass.history";
+const SETTINGS_KEY = "emojiPass.settings";
+const MAX_HISTORY = 10;
+
+let history = loadHistory();
 
 lengthSlider.addEventListener("input", () => {
     lengthValue.textContent = lengthSlider.value;
+    saveSettings();
+});
+
+[uppercase, lowercase, numbers, symbols, emojiMode].forEach((checkbox) => {
+    checkbox.addEventListener("change", saveSettings);
 });
 
 generateBtn.addEventListener("click", () => {
@@ -41,221 +49,275 @@ generateBtn.addEventListener("click", () => {
 
 copyBtn.addEventListener("click", copyPassword);
 
-function generateMainPassword() {
+function getRandomIndex(max) {
+    if (max <= 0) {
+        throw new Error("Random range must be greater than zero.");
+    }
 
-    const password = createPassword();
+    const maxUint32 = 0x100000000;
+    const limit = Math.floor(maxUint32 / max) * max;
+    const random = new Uint32Array(1);
 
-    passwordOutput.value = password;
+    do {
+        crypto.getRandomValues(random);
+    } while (random[0] >= limit);
 
-    updateStrength(password);
+    return random[0] % max;
+}
 
-    saveHistory(password);
+function getRandomCharacter(characters) {
+    return characters[getRandomIndex(characters.length)];
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = getRandomIndex(i + 1);
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+
+    return array;
+}
+
+function getSelectedCharacterSets() {
+    const sets = [];
+
+    if (uppercase.checked) sets.push(UPPER);
+    if (lowercase.checked) sets.push(LOWER);
+    if (numbers.checked) sets.push(NUMBERS);
+    if (symbols.checked) sets.push(SYMBOLS);
+    if (emojiMode.checked) sets.push(EMOJIS);
+
+    return sets;
 }
 
 function createPassword() {
+    const sets = getSelectedCharacterSets();
 
-    let chars = "";
-
-    if (uppercase.checked) chars += UPPER;
-    if (lowercase.checked) chars += LOWER;
-    if (numbers.checked) chars += NUMBERS;
-    if (symbols.checked) chars += SYMBOLS;
-
-    if (chars.length === 0) {
-        return "Select options";
+    if (sets.length === 0) {
+        throw new Error("Select at least one character type.");
     }
 
     const length = Number(lengthSlider.value);
 
-    let password = "";
-
-    for (let i = 0; i < length; i++) {
-
-        const randomIndex =
-            Math.floor(Math.random() * chars.length);
-
-        password += chars[randomIndex];
+    if (!Number.isInteger(length) || length < 6 || length > 64) {
+        throw new Error("Password length must be between 6 and 64.");
     }
 
-    if (emojiMode.checked) {
+    if (length < sets.length) {
+        throw new Error("Password length is too short for the selected options.");
+    }
 
-        const emojiCount = Math.max(
-            1,
-            Math.floor(length / 8)
+    const passwordCharacters = [];
+
+    // Guarantee at least one character from every selected character set.
+    for (const set of sets) {
+        passwordCharacters.push(
+            Array.isArray(set)
+                ? set[getRandomIndex(set.length)]
+                : getRandomCharacter(set)
         );
-
-        for (let i = 0; i < emojiCount; i++) {
-
-            const emoji =
-                EMOJIS[
-                    Math.floor(
-                        Math.random() * EMOJIS.length
-                    )
-                ];
-
-            const position =
-                Math.floor(
-                    Math.random() * password.length
-                );
-
-            password =
-                password.slice(0, position) +
-                emoji +
-                password.slice(position);
-        }
     }
 
-    return password;
+    const allCharacters = sets.flatMap((set) =>
+        Array.isArray(set) ? set : [...set]
+    );
+
+    while (passwordCharacters.length < length) {
+        passwordCharacters.push(getRandomCharacter(allCharacters));
+    }
+
+    return shuffle(passwordCharacters).join("");
 }
 
-function updateStrength(password) {
+function generateMainPassword() {
+    try {
+        const password = createPassword();
+
+        passwordOutput.value = password;
+        updateStrength(password);
+        saveHistory(password);
+    } catch (error) {
+        passwordOutput.value = "";
+        updateStrength("");
+        showToast(error.message);
+    }
+}
+
+function calculateStrength(password) {
+    if (!password) return 0;
 
     let score = 0;
 
     if (password.length >= 8) score++;
     if (password.length >= 12) score++;
-    if (password.length >= 18) score++;
-
+    if (password.length >= 20) score++;
     if (/[A-Z]/.test(password)) score++;
     if (/[a-z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
     if (/[^A-Za-z0-9]/.test(password)) score++;
 
-    let text = "Weak";
-    let width = 25;
+    return score;
+}
 
-    if (score >= 3) {
-        text = "Medium";
-        width = 50;
-    }
+function updateStrength(password) {
+    const score = calculateStrength(password);
 
-    if (score >= 5) {
-        text = "Strong";
-        width = 75;
-    }
+    const levels = [
+        { text: "—", width: 0 },
+        { text: "Weak", width: 25 },
+        { text: "Weak", width: 25 },
+        { text: "Medium", width: 50 },
+        { text: "Medium", width: 50 },
+        { text: "Strong", width: 75 },
+        { text: "Strong", width: 75 },
+        { text: "Very Strong", width: 100 }
+    ];
 
-    if (score >= 7) {
-        text = "Ultra Secure";
-        width = 100;
-    }
+    const level = levels[Math.min(score, levels.length - 1)];
 
-    strengthText.textContent =
-        `Strength: ${text}`;
-
-    strengthFill.style.width =
-        `${width}%`;
+    strengthText.textContent = `Strength: ${level.text}`;
+    strengthFill.style.width = `${level.width}%`;
 }
 
 function saveHistory(password) {
+    history = [password, ...history.filter((item) => item !== password)]
+        .slice(0, MAX_HISTORY);
 
-    history.unshift(password);
-
-    if (history.length > 10) {
-        history.pop();
-    }
-
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     renderHistory();
 }
 
+function loadHistory() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(HISTORY_KEY));
+        return Array.isArray(stored) ? stored.slice(0, MAX_HISTORY) : [];
+    } catch {
+        return [];
+    }
+}
+
 function renderHistory() {
+    historyList.replaceChildren();
 
-    historyList.innerHTML = "";
-
-    history.forEach(pass => {
-
-        const li =
-            document.createElement("li");
-
-        li.textContent = pass;
-
+    history.forEach((password) => {
+        const li = document.createElement("li");
+        li.textContent = password;
         historyList.appendChild(li);
     });
 }
 
-function generateQuickPasswords() {
+function saveSettings() {
+    const settings = {
+        length: Number(lengthSlider.value),
+        uppercase: uppercase.checked,
+        lowercase: lowercase.checked,
+        numbers: numbers.checked,
+        symbols: symbols.checked,
+        emojiMode: emojiMode.checked
+    };
 
-    multiPasswords.innerHTML = "";
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function loadSettings() {
+    try {
+        const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+
+        if (!settings || typeof settings !== "object") return;
+
+        if (Number.isInteger(settings.length)) {
+            const safeLength = Math.min(64, Math.max(6, settings.length));
+            lengthSlider.value = safeLength;
+            lengthValue.textContent = safeLength;
+        }
+
+        if (typeof settings.uppercase === "boolean") {
+            uppercase.checked = settings.uppercase;
+        }
+
+        if (typeof settings.lowercase === "boolean") {
+            lowercase.checked = settings.lowercase;
+        }
+
+        if (typeof settings.numbers === "boolean") {
+            numbers.checked = settings.numbers;
+        }
+
+        if (typeof settings.symbols === "boolean") {
+            symbols.checked = settings.symbols;
+        }
+
+        if (typeof settings.emojiMode === "boolean") {
+            emojiMode.checked = settings.emojiMode;
+        }
+    } catch {
+        localStorage.removeItem(SETTINGS_KEY);
+    }
+}
+
+function generateQuickPasswords() {
+    multiPasswords.replaceChildren();
 
     for (let i = 0; i < 5; i++) {
+        try {
+            const password = createPassword();
+            const item = document.createElement("button");
 
-        const pass = createPassword();
+            item.type = "button";
+            item.className = "generated-password";
+            item.textContent = password;
 
-        const item =
-            document.createElement("div");
+            item.addEventListener("click", async () => {
+                await copyToClipboard(password);
+            });
 
-        item.className =
-            "generated-password";
-
-        item.textContent = pass;
-
-        item.addEventListener("click", () => {
-
-            navigator.clipboard.writeText(pass);
-
-            showToast(
-                "Password copied 📋"
-            );
-        });
-
-        multiPasswords.appendChild(item);
+            multiPasswords.appendChild(item);
+        } catch (error) {
+            showToast(error.message);
+            break;
+        }
     }
 }
 
 async function copyPassword() {
+    const value = passwordOutput.value;
 
-    const value =
-        passwordOutput.value;
+    if (!value) {
+        showToast("Generate a password first.");
+        return;
+    }
 
-    if (!value) return;
+    await copyToClipboard(value);
+}
 
+async function copyToClipboard(value) {
     try {
-
         await navigator.clipboard.writeText(value);
-
-        showToast(
-            "Copied to clipboard 📋"
-        );
-
+        showToast("Password copied 📋");
     } catch {
-
-        showToast(
-            "Copy failed ❌"
-        );
+        showToast("Copy failed ❌");
     }
 }
 
 function showToast(message) {
+    document.querySelector(".toast")?.remove();
 
-    const oldToast =
-        document.querySelector(".toast");
-
-    if (oldToast) {
-        oldToast.remove();
-    }
-
-    const toast =
-        document.createElement("div");
-
+    const toast = document.createElement("div");
     toast.className = "toast";
-
     toast.textContent = message;
-
     document.body.appendChild(toast);
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
         toast.classList.add("show");
-    }, 10);
+    });
 
     setTimeout(() => {
-
         toast.classList.remove("show");
-
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-
+        setTimeout(() => toast.remove(), 300);
     }, 2200);
 }
 
+loadSettings();
+renderHistory();
 generateMainPassword();
 generateQuickPasswords();
