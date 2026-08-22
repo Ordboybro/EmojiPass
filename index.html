@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="EmojiPass is a secure browser-based password generator with customizable character sets and emoji mode.">
+    <meta name="description" content="EmojiPass is a privacy-first browser password generator powered by the Web Crypto API.">
     <meta name="theme-color" content="#09090c">
+    <meta name="color-scheme" content="dark">
 
-    <title>EmojiPass • Password Generator</title>
+    <title>EmojiPass • Secure Password Generator</title>
 
     <link rel="stylesheet" href="style.css">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -22,83 +19,110 @@
     <div class="container">
         <header class="hero">
             <div class="logo" aria-hidden="true">🔐</div>
-            <h1>EmojiPass</h1>
-            <p>Secure password generation with customizable options and emoji mode.</p>
+            <div class="version-badge">EmojiPass · v2.0</div>
+            <h1>Secure passwords.<br><span>Zero server.</span></h1>
+            <p>Generate strong passwords locally in your browser with cryptographically secure randomness. Nothing is uploaded.</p>
         </header>
 
         <main class="glass card">
             <div class="password-section">
-                <label class="sr-only" for="passwordOutput">Generated password</label>
-                <input
-                    type="text"
-                    id="passwordOutput"
-                    readonly
-                    autocomplete="off"
-                    spellcheck="false"
-                    aria-describedby="strengthText"
-                    aria-label="Generated password"
-                >
+                <div class="output-wrapper">
+                    <label class="sr-only" for="passwordOutput">Generated password</label>
+                    <input
+                        type="text"
+                        id="passwordOutput"
+                        readonly
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        aria-describedby="strengthText entropyText"
+                        aria-label="Generated password"
+                    >
+                    <button id="regenerateBtn" class="icon-btn" type="button" aria-label="Generate a new password" title="Generate a new password">↻</button>
+                </div>
 
-                <button id="copyBtn" type="button" aria-label="Copy generated password">
+                <button id="copyBtn" class="copy-btn" type="button" aria-label="Copy generated password">
                     📋 Copy
                 </button>
             </div>
 
             <div class="strength-container" aria-live="polite">
-                <div id="strengthText">Strength: —</div>
-                <div class="strength-bar" role="progressbar" aria-label="Password strength" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="strength-meta">
+                    <span id="strengthText">Strength: —</span>
+                    <span id="entropyText">Estimated entropy: —</span>
+                </div>
+                <div
+                    class="strength-bar"
+                    role="progressbar"
+                    aria-label="Password strength"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="0"
+                >
                     <div id="strengthFill"></div>
                 </div>
             </div>
 
             <section class="controls" aria-labelledby="optionsTitle">
-                <h2 id="optionsTitle" class="sr-only">Password options</h2>
+                <div class="section-label">
+                    <h2 id="optionsTitle">Generator settings</h2>
+                    <button id="resetSettingsBtn" class="text-btn" type="button">Reset</button>
+                </div>
 
                 <div class="control-group">
                     <label for="lengthSlider">
-                        <span>Length</span>
-                        <output id="lengthValue" for="lengthSlider">16</output>
+                        <span>Password length</span>
+                        <output id="lengthValue" for="lengthSlider">20</output>
                     </label>
 
                     <input
                         type="range"
                         min="6"
                         max="64"
-                        value="16"
+                        value="20"
                         id="lengthSlider"
                         aria-label="Password length"
                     >
+                    <div class="range-labels" aria-hidden="true"><span>6</span><span>64</span></div>
                 </div>
 
                 <div class="options">
                     <label class="checkbox">
                         <input type="checkbox" id="uppercase" checked>
-                        <span>Uppercase Letters</span>
+                        <span><strong>Uppercase</strong><small>A–Z</small></span>
                     </label>
 
                     <label class="checkbox">
                         <input type="checkbox" id="lowercase" checked>
-                        <span>Lowercase Letters</span>
+                        <span><strong>Lowercase</strong><small>a–z</small></span>
                     </label>
 
                     <label class="checkbox">
                         <input type="checkbox" id="numbers" checked>
-                        <span>Numbers</span>
+                        <span><strong>Numbers</strong><small>0–9</small></span>
                     </label>
 
                     <label class="checkbox">
                         <input type="checkbox" id="symbols" checked>
-                        <span>Symbols</span>
+                        <span><strong>Symbols</strong><small>!@#$…</small></span>
                     </label>
 
                     <label class="checkbox">
                         <input type="checkbox" id="emojiMode">
-                        <span>Emoji Mode 😎</span>
+                        <span><strong>Emoji mode</strong><small>😎 🔐 🚀</small></span>
+                    </label>
+
+                    <label class="checkbox">
+                        <input type="checkbox" id="excludeAmbiguous">
+                        <span><strong>Exclude ambiguous</strong><small>Il1O0</small></span>
                     </label>
                 </div>
 
-                <button id="generateBtn" type="button">
+                <div id="settingsError" class="settings-error" role="alert" hidden></div>
+
+                <button id="generateBtn" class="generate-btn" type="button">
                     ✨ Generate Password
+                    <kbd>Ctrl ↵</kbd>
                 </button>
             </section>
         </main>
@@ -106,10 +130,10 @@
         <section class="glass history-card" aria-labelledby="historyTitle">
             <div class="section-heading">
                 <div>
-                    <h2 id="historyTitle" class="section-title">🕒 Current Session</h2>
-                    <p class="section-note">Generated passwords are kept only while this page is open.</p>
+                    <h2 id="historyTitle" class="section-title">🕒 Session history</h2>
+                    <p class="section-note">Up to 10 passwords are kept in memory only. Reloading this page clears them.</p>
                 </div>
-                <button id="clearHistoryBtn" class="secondary-btn" type="button">Clear history</button>
+                <button id="clearHistoryBtn" class="secondary-btn" type="button">Clear</button>
             </div>
 
             <ul id="historyList"></ul>
@@ -117,16 +141,38 @@
         </section>
 
         <section class="glass multi-card" aria-labelledby="quickTitle">
-            <h2 id="quickTitle" class="section-title">🎲 Quick Generate</h2>
-            <p class="section-note">Click a password to copy it.</p>
-            <div id="multiPasswords"></div>
+            <div class="section-heading">
+                <div>
+                    <h2 id="quickTitle" class="section-title">🎲 Quick generate</h2>
+                    <p class="section-note">Five additional passwords using your current settings.</p>
+                </div>
+                <button id="refreshQuickBtn" class="secondary-btn" type="button">↻ Refresh</button>
+            </div>
+            <div id="multiPasswords" class="quick-grid"></div>
+        </section>
+
+        <section class="privacy-note" aria-label="Privacy information">
+            <span>🛡️</span>
+            <div>
+                <strong>Private by design</strong>
+                <p>Passwords are generated in this browser with <code>crypto.getRandomValues()</code>. EmojiPass has no backend and sends no generated passwords anywhere.</p>
+            </div>
         </section>
 
         <footer>
-            <div>Made with ❤️ by ORDBOY</div>
+            <div>Made with ❤️ by <a href="https://github.com/Ordboybro" target="_blank" rel="noopener noreferrer">ORDBOY</a></div>
+            <div class="footer-links">
+                <a href="https://github.com/Ordboybro/EmojiPass" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <span>•</span>
+                <span>MIT License</span>
+            </div>
         </footer>
     </div>
 
-    <script src="script.js"></script>
+    <noscript>
+        <div class="noscript">EmojiPass requires JavaScript to generate passwords.</div>
+    </noscript>
+
+    <script src="script.js" defer></script>
 </body>
 </html>
