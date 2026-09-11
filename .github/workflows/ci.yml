@@ -6,12 +6,18 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: emojipass-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   quality:
+    name: Static quality
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,6 +26,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Repository whitespace check
+        run: git diff --check
 
       - name: JavaScript syntax
         run: node --check script.js
@@ -52,10 +61,12 @@ jobs:
             exit 1
           fi
           grep -q "crypto.getRandomValues" script.js
-          echo "Web Crypto contract OK"
+          grep -q "navigator.clipboard" script.js
+          echo "Web Crypto and clipboard contracts OK"
 
       - name: HTML smoke checks
         run: |
           grep -qi '<title>.*EmojiPass' index.html
           grep -q 'meta name="viewport"' index.html
+          grep -q 'meta name="description"' index.html
           echo "HTML smoke checks OK"
