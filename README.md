@@ -2,6 +2,8 @@
 
 > Privacy-first password generator that runs entirely in your browser.
 
+[![CI](https://github.com/Ordboybro/EmojiPass/actions/workflows/ci.yml/badge.svg)](https://github.com/Ordboybro/EmojiPass/actions/workflows/ci.yml)
+
 EmojiPass creates strong, customizable passwords locally on your device. Random values come from the browser's **Web Crypto API** (`crypto.getRandomValues()`), so generated passwords are not sent to a backend or external API.
 
 ## ✨ What's new in v2.0
@@ -93,6 +95,7 @@ No frameworks, packages, build tools, or backend are required.
 
 ```text
 EmojiPass/
+├── .github/workflows/ci.yml
 ├── index.html
 ├── style.css
 ├── script.js
@@ -133,6 +136,17 @@ EmojiPass is a static site, so it can be deployed with GitHub Pages without a ba
 
 After enabling GitHub Pages for the repository, the site can be opened from the repository's Pages URL.
 
+## 🧪 Automated quality
+
+Every push and pull request to `main` runs lightweight CI checks covering:
+
+- JavaScript syntax
+- local HTML asset references
+- Web Crypto usage instead of `Math.random()`
+- required HTML metadata
+
+The checks are intentionally dependency-light because EmojiPass has no build system.
+
 ## 🧪 Browser requirements
 
 EmojiPass expects a modern browser with support for:
@@ -155,7 +169,7 @@ The project intentionally avoids sending generated passwords anywhere. If you ex
 
 ## 📈 Project status
 
-**Active development — v2.0**
+**Portfolio project — v2.0**
 
 EmojiPass is part of ORDBOY's software-development portfolio and is being improved as a practical frontend/security-oriented project.
 
